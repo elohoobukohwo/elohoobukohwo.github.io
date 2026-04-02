@@ -1,133 +1,129 @@
-/* app.js — Eloho B. Obukohwo Personal Site */
+/* ══════════════════════════════════════════════════
+   ELOHO B. OBUKOHWO — Premium Dark Editorial JS
+   ══════════════════════════════════════════════════ */
 
 (function () {
   'use strict';
 
-  // ── Theme Toggle ──
-  const toggle = document.querySelector('[data-theme-toggle]');
-  const root = document.documentElement;
-  let currentTheme = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-  root.setAttribute('data-theme', currentTheme);
-  updateToggleIcon();
-
-  if (toggle) {
-    toggle.addEventListener('click', () => {
-      currentTheme = currentTheme === 'dark' ? 'light' : 'dark';
-      root.setAttribute('data-theme', currentTheme);
-      toggle.setAttribute('aria-label', 'Switch to ' + (currentTheme === 'dark' ? 'light' : 'dark') + ' mode');
-      updateToggleIcon();
-    });
-  }
-
-  function updateToggleIcon() {
-    if (!toggle) return;
-    if (currentTheme === 'dark') {
-      toggle.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>';
-    } else {
-      toggle.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>';
-    }
-  }
-
-  // ── Sticky Header (scroll-aware) ──
-  const header = document.getElementById('header');
-  let lastScrollY = 0;
-  let ticking = false;
+  // ─── Nav Scroll Behaviour ───
+  const nav = document.getElementById('nav');
+  let lastY = 0;
 
   function onScroll() {
-    const currentScrollY = window.scrollY;
-    if (currentScrollY > 80) {
-      header.classList.add('header--scrolled');
+    const y = window.scrollY;
+    if (y > 80) {
+      nav.classList.add('nav--scrolled');
     } else {
-      header.classList.remove('header--scrolled');
+      nav.classList.remove('nav--scrolled');
     }
-
-    if (currentScrollY > lastScrollY && currentScrollY > 300) {
-      header.classList.add('header--hidden');
-    } else {
-      header.classList.remove('header--hidden');
-    }
-
-    lastScrollY = currentScrollY;
-    ticking = false;
+    lastY = y;
   }
+  window.addEventListener('scroll', onScroll, { passive: true });
 
-  window.addEventListener('scroll', () => {
-    if (!ticking) {
-      requestAnimationFrame(onScroll);
-      ticking = true;
-    }
-  }, { passive: true });
+  // ─── Burger Toggle ───
+  const burger = document.getElementById('burger');
+  const mobileMenu = document.getElementById('mobile-menu');
 
-  // ── Mobile Nav ──
-  const menuBtn = document.querySelector('[data-menu-toggle]');
-  const nav = document.getElementById('nav');
-  const overlay = document.querySelector('[data-mobile-overlay]');
+  if (burger && mobileMenu) {
+    burger.addEventListener('click', () => {
+      const open = mobileMenu.classList.toggle('open');
+      burger.classList.toggle('active');
+      burger.setAttribute('aria-expanded', open);
+      document.body.style.overflow = open ? 'hidden' : '';
+    });
 
-  function openNav() {
-    nav.classList.add('is-open');
-    if (overlay) overlay.classList.add('is-visible');
-    menuBtn.setAttribute('aria-expanded', 'true');
-    document.body.style.overflow = 'hidden';
-  }
-
-  function closeNav() {
-    nav.classList.remove('is-open');
-    if (overlay) overlay.classList.remove('is-visible');
-    menuBtn.setAttribute('aria-expanded', 'false');
-    document.body.style.overflow = '';
-  }
-
-  if (menuBtn) {
-    menuBtn.addEventListener('click', () => {
-      const isOpen = nav.classList.contains('is-open');
-      isOpen ? closeNav() : openNav();
+    mobileMenu.querySelectorAll('.mobile-menu__link').forEach(link => {
+      link.addEventListener('click', () => {
+        mobileMenu.classList.remove('open');
+        burger.classList.remove('active');
+        burger.setAttribute('aria-expanded', 'false');
+        document.body.style.overflow = '';
+      });
     });
   }
-  if (overlay) {
-    overlay.addEventListener('click', closeNav);
-  }
 
-  // Close mobile nav on link click
-  const navLinks = document.querySelectorAll('.header__nav-link');
-  navLinks.forEach(link => {
-    link.addEventListener('click', () => {
-      if (nav.classList.contains('is-open')) {
-        closeNav();
-      }
-    });
-  });
-
-  // ── Smooth Scroll for anchor links ──
+  // ─── Smooth Scroll for Anchor Links ───
   document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-    anchor.addEventListener('click', function (e) {
-      const target = document.querySelector(this.getAttribute('href'));
+    anchor.addEventListener('click', (e) => {
+      const href = anchor.getAttribute('href');
+      if (href === '#') return;
+      const target = document.querySelector(href);
       if (target) {
         e.preventDefault();
-        target.scrollIntoView({ behavior: 'smooth' });
+        const offset = 80;
+        const top = target.getBoundingClientRect().top + window.scrollY - offset;
+        window.scrollTo({ top, behavior: 'smooth' });
       }
     });
   });
 
-  // ── Fallback scroll-driven fade-in (IntersectionObserver) ──
-  // For browsers that don't support CSS scroll-driven animations
-  if (!CSS.supports || !CSS.supports('animation-timeline', 'scroll()')) {
-    const fadeEls = document.querySelectorAll('.fade-in');
-    if (fadeEls.length && 'IntersectionObserver' in window) {
-      const observer = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-          if (entry.isIntersecting) {
-            entry.target.style.opacity = '1';
-            entry.target.style.transition = 'opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1)';
-            observer.unobserve(entry.target);
-          }
-        });
-      }, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
+  // ─── Scroll Reveal ───
+  function initReveals() {
+    const elements = document.querySelectorAll('.section-label, .section-title, .about__lead, .about__text p, .about__image, .pub-card, .venture-item, .essay-card, .pullquote__text, .contact__heading, .contact__subtext, .contact__links, .hero__kicker, .hero__name, .hero__manifesto, .hero__cta');
 
-      fadeEls.forEach(el => {
-        el.style.opacity = '0';
-        observer.observe(el);
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('visible');
+          observer.unobserve(entry.target);
+        }
       });
-    }
+    }, {
+      threshold: 0.1,
+      rootMargin: '0px 0px -50px 0px'
+    });
+
+    elements.forEach((el, i) => {
+      el.classList.add('reveal-up');
+      el.style.transitionDelay = `${(i % 4) * 80}ms`;
+      observer.observe(el);
+    });
   }
+
+  // ─── Hero Parallax Effect ───
+  function initHeroParallax() {
+    const heroImg = document.querySelector('.hero__photo');
+    if (!heroImg) return;
+
+    window.addEventListener('scroll', () => {
+      const y = window.scrollY;
+      if (y < window.innerHeight) {
+        heroImg.style.transform = `scale(1.05) translateY(${y * 0.08}px)`;
+      }
+    }, { passive: true });
+  }
+
+  // ─── Active Nav Link Tracking ───
+  function initActiveNav() {
+    const sections = document.querySelectorAll('section[id]');
+    const navLinks = document.querySelectorAll('.nav__link');
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          const id = entry.target.getAttribute('id');
+          navLinks.forEach(link => {
+            link.classList.toggle('nav__link--active',
+              link.getAttribute('href') === `#${id}`);
+          });
+        }
+      });
+    }, {
+      threshold: 0.3,
+      rootMargin: '-80px 0px -50% 0px'
+    });
+
+    sections.forEach(section => observer.observe(section));
+  }
+
+  // ─── Initialize ───
+  document.addEventListener('DOMContentLoaded', () => {
+    initReveals();
+    initHeroParallax();
+    initActiveNav();
+
+    // Trigger initial scroll check
+    onScroll();
+  });
 
 })();
